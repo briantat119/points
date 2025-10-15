@@ -3,23 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <title>QR Points Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Mobile friendly -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; box-sizing: border-box; background: #f9fafb;}
-    .container { max-width: 420px; margin: 0 auto; padding: 16px; background: #fff; min-height: 100vh; }
-    h2 { font-size: 1.5em; margin-bottom: 18px; }
-    #reader { width: 100%; max-width: 350px; margin: 0 auto 20px auto; }
-    #points { font-size: 2em; color: #3b82f6; margin: 10px 0; }
-    #qrcode { margin-top: 20px; display: flex; justify-content: center; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #f9fafb;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      max-width: 100vw;
+      padding: 0;
+    }
+    h2 {
+      font-size: 1.2em;
+      margin: 0.5em 0 0.3em 0;
+    }
+    #reader {
+      width: 90vw;
+      max-width: 260px;
+      min-width: 160px;
+      margin: 0.3em 0;
+    }
+    #message {
+      min-height: 1.6em;
+      font-size: 0.98em;
+      margin-bottom: 0.2em;
+    }
+    #loading {
+      display: none;
+      text-align: center;
+      margin: 0.5em 0;
+    }
+    #loading img {
+      width: 36px;
+      height: 36px;
+    }
+    #points, #qrcode {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    #points {
+      font-size: 1.5em;
+      color: #3b82f6;
+      margin: 0 0.2em;
+    }
+    #qrcode {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+      display: flex;
+      justify-content: center;
+    }
+    #qrcode img {
+      width: 64px !important;
+      height: 64px !important;
+    }
     .success { color: green; }
     .fail { color: red; }
-    #loading { margin: 20px 0; text-align: center; }
-    @media (max-width: 600px) {
-      .container { padding: 6vw 2vw; }
-      #reader { max-width: 100vw; }
-      #qrcode img { width: 90vw; max-width: 128px; }
+    strong { font-weight: 600; font-size: 1em; }
+    @media (max-width: 400px) {
+      h2 { font-size: 1em; }
+      #reader { max-width: 92vw; min-width: 120px; }
+      #qrcode img { width: 48px !important; height: 48px !important; }
+      #points { font-size: 1.1em; }
     }
   </style>
 </head>
@@ -28,8 +84,8 @@
     <h2>Scan QR Code to Gain Points</h2>
     <div id="reader"></div>
     <div id="message"></div>
-    <div id="loading" style="display:none;text-align:center;">
-      <img src="https://cdnjs.cloudflare.com/ajax/libs/timelinejs/2.36.0/css/loading.gif" alt="Loading..." width="48" height="48">
+    <div id="loading">
+      <img src="https://cdnjs.cloudflare.com/ajax/libs/timelinejs/2.36.0/css/loading.gif" alt="Loading...">
     </div>
     <div>
       <strong>Your Points:</strong>
@@ -56,8 +112,8 @@
       document.getElementById('qrcode').innerHTML = '';
       new QRCode(document.getElementById('qrcode'), {
         text: 'Points:' + points,
-        width: 128,
-        height: 128
+        width: 64,
+        height: 64
       });
     }
 
@@ -98,7 +154,8 @@
     window.onload = function() {
       setPoints(getPoints());
       html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", { fps: 10, qrbox: 250 });
+        "reader", { fps: 10, qrbox: 180, facingMode: { exact: "environment" } }
+      );
       html5QrcodeScanner.render(onScanSuccess, onScanFailure);
       generatePointsQR(getPoints());
     };
