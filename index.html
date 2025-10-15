@@ -12,12 +12,16 @@
     #qrcode { margin-top: 20px; }
     .success { color: green; }
     .fail { color: red; }
+    #loading { margin: 20px 0; text-align: center; }
   </style>
 </head>
 <body>
   <h2>Scan QR Code to Gain Points</h2>
   <div id="reader"></div>
   <div id="message"></div>
+  <div id="loading" style="display:none;text-align:center;">
+    <img src="https://cdnjs.cloudflare.com/ajax/libs/timelinejs/2.36.0/css/loading.gif" alt="Loading..." width="48" height="48">
+  </div>
   <div>
     <strong>Your Points:</strong>
     <span id="points">0</span>
@@ -27,10 +31,8 @@
     <div id="qrcode"></div>
   </div>
   <script>
-    // -- CONFIGURE YOUR VALID QR CODE DATA HERE --
     const VALID_QR = "BRIANLAMQRCODE202510";
     const POINTS_PER_SCAN = 10;
-    // --
 
     function getPoints() {
       return parseInt(localStorage.getItem('accumulated_points') || '0', 10);
@@ -49,11 +51,23 @@
       });
     }
 
-    // Setup initial display
-    setPoints(getPoints());
+    let scannerPaused = false;
+    let html5QrcodeScanner;
 
-    // QR Code Scanner
+    function showLoadingAndResume() {
+      document.getElementById('loading').style.display = 'block';
+      scannerPaused = true;
+      setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        html5QrcodeScanner.clear().then(() => {
+          html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+          scannerPaused = false;
+        });
+      }, 3000);
+    }
+
     function onScanSuccess(decodedText, decodedResult) {
+      if (scannerPaused) return;
       const msgDiv = document.getElementById('message');
       if (decodedText === VALID_QR) {
         let pts = getPoints() + POINTS_PER_SCAN;
@@ -64,18 +78,20 @@
         msgDiv.textContent = "Invalid QR code.";
         msgDiv.className = "fail";
       }
+      showLoadingAndResume();
     }
 
     function onScanFailure(error) {
       // Not displaying scan errors to avoid clutter.
     }
 
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: 250 });
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-
-    // Generate initial QR code
-    generatePointsQR(getPoints());
+    window.onload = function() {
+      setPoints(getPoints());
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: 250 });
+      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+      generatePointsQR(getPoints());
+    };
   </script>
 </body>
 </html>
