@@ -123,12 +123,34 @@
       border-radius: 8px;
     }
     strong { font-weight: 700; font-size: 1.03em; color: #a34fa3; }
+    .upload-label {
+      cursor:pointer;
+      color:#a34fa3;
+      font-size:0.95em;
+      background: #fff6fc;
+      border-radius: 8px;
+      padding: 0.3em 0.8em;
+      border: 1px solid #e0ecfc;
+      transition: background 0.2s;
+    }
+    .upload-label:hover {
+      background: #fde1f8;
+    }
+    #profile-pic-preview img {
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      box-shadow:0 2px 8px #e0ecfc;
+      object-fit:cover;
+      object-position:center;
+    }
     @media (max-width: 400px) {
       h2 { font-size: 1em; }
       #reader { max-width: 90vw; min-width: 80px; }
       #qrcode img { width: 48px !important; height: 48px !important; }
       #points { font-size: 1.2em; }
       #score-card, #qrcode-card { padding: 0.6em 0.7em;}
+      #profile-pic-preview img { width: 32px; height: 32px; }
     }
   </style>
 </head>
@@ -146,6 +168,13 @@
     </div>
     <div id="qrcode-card">
       <strong>Your Points QR Code</strong>
+      <div style="margin-bottom: 0.5em;">
+        <label for="profile-pic-input" class="upload-label">
+          📷 Choose Profile Picture
+        </label>
+        <input id="profile-pic-input" type="file" accept="image/*" style="display:none;">
+      </div>
+      <div id="profile-pic-preview" style="margin-bottom:0.5em;"></div>
       <div id="qrcode"></div>
     </div>
   </div>
@@ -166,13 +195,67 @@
         setTimeout(() => ptsElem.classList.remove('bounce'), 500);
       }
     }
+
+    function getProfilePic() {
+      return localStorage.getItem('profile_pic_dataurl') || '';
+    }
+    function setProfilePic(dataUrl) {
+      localStorage.setItem('profile_pic_dataurl', dataUrl);
+      showProfilePicPreview(dataUrl);
+      generatePointsQR(getPoints());
+    }
+    function showProfilePicPreview(dataUrl) {
+      const preview = document.getElementById('profile-pic-preview');
+      if (dataUrl) {
+        preview.innerHTML = `<img src="${dataUrl}" alt="Profile picture">`;
+      } else {
+        preview.innerHTML = '';
+      }
+    }
+
     function generatePointsQR(points) {
       document.getElementById('qrcode').innerHTML = '';
-      new QRCode(document.getElementById('qrcode'), {
+      const qrDiv = document.getElementById('qrcode');
+      new QRCode(qrDiv, {
         text: 'Points:' + points,
         width: 70,
         height: 70
       });
+      // Overlay profile picture in the center if available
+      const pic = getProfilePic();
+      if (pic) {
+        setTimeout(() => { // Wait for QR to render
+          const qrImg = qrDiv.querySelector('img');
+          if (qrImg) {
+            // Create overlayed canvas
+            const canvas = document.createElement('canvas');
+            const size = 70;
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            // Draw QR code
+            ctx.drawImage(qrImg, 0, 0, size, size);
+            // Draw circle profile pic in center
+            const iconSize = 24;
+            const iconX = (size - iconSize) / 2;
+            const iconY = (size - iconSize) / 2;
+            // Draw circle mask
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, iconSize/2, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.clip();
+            // Draw image
+            const img = new window.Image();
+            img.onload = () => {
+              ctx.drawImage(img, iconX, iconY, iconSize, iconSize);
+              ctx.restore();
+              qrDiv.innerHTML = ''; // Remove previous QR
+              qrDiv.appendChild(canvas);
+            };
+            img.src = pic;
+          }
+        }, 100);
+      }
     }
 
     let scannerPaused = false;
@@ -216,6 +299,20 @@
       );
       html5QrcodeScanner.render(onScanSuccess, onScanFailure);
       generatePointsQR(getPoints());
+
+      // Profile pic upload
+      const input = document.getElementById('profile-pic-input');
+      input.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            setProfilePic(evt.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      showProfilePicPreview(getProfilePic());
     };
   </script>
 </body>
